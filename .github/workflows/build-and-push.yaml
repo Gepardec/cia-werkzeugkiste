@@ -20,6 +20,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
 
     steps:
       - name: Checkout repository
@@ -54,8 +55,54 @@ jobs:
             type=raw,value=latest,enable=true
             # Tag with a short hash of the Containerfile calculated in a previous step
             type=raw,value=cf-${{ steps.file_hash.outputs.sha }},enable=true
+            
+      - name: Build and load image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./images/base-debug/Containerfile
+          load: true # Load the image into the Docker daemon
+          push: false # Do not push yet
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Build and push base image
+      # Generate SBOM (Software Bill of Materials) using Trivy
+      # This step creates an SBOM in the SPDX-JSON format.
+      - name: Generate SBOM
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          format: 'spdx-json'
+          output: 'sbom.spdx.json'
+
+      # Run Trivy vulnerability scanner
+      # This step scans the image for vulnerabilities. If high or critical vulnerabilities are found,
+      # the workflow will fail, preventing the image from being pushed.
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'sbom'
+          scan-ref: 'sbom.spdx.json'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      # Upload Trivy scan results to GitHub Security tab
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      # Upload SBOM as a workflow artifact
+      # This makes the SBOM file available for download from the workflow run's summary page.
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: sbom.spdx.json
+          retention-days: 7
+
+      - name: Push to GHCR
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -65,63 +112,81 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  # Job 2: Build dependent images after the base-debug image is ready
-  build-dependent-images:
-    # This 'needs' key ensures this job only runs after 'build-base' succeeds
-    needs: build-base
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
-    strategy:
-      # This matrix now only contains images that depend on the base image
-      matrix:
-        image: [network-debug] # Add future images like 'java-debug' here
+#      # Install cosign
+#      - name: Install cosign
+#        uses: sigstore/cosign-installer@v3
+#
+#      - name: Attach SBOM to image
+#        run: |
+#          cosign attach sbom --sbom sbom.json $IMAGE
+#
+#      # Attach SBOM to image with cosign
+#      # This step creates an attestation and attaches the SBOM to the image in the registry.
+#      - name: Attach SBOM to image with cosign
+#        run: |
+#          cosign attest --predicate sbom.spdx.json --type spdxjson ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
-      - name: Hash Dockerfile
-        id: file_hash
-        run: |
-          # Calculate a sha256 hash and take the first 8 characters
-          echo "sha=$(shasum -a 256 images/${{ matrix.image }}/Containerfile | head -c 8)" >> $GITHUB_OUTPUT
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to the Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/debug-images/${{ matrix.image }}
-          tags: |
-            # Tag with 'latest'
-            type=raw,value=latest,enable=true
-            # Tag with a short hash of the Containerfile calculated in a previous step
-            type=raw,value=cf-${{ steps.file_hash.outputs.sha }},enable=true
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./images/${{ matrix.image }}/Containerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          # This build-arg now safely references the base image pushed in the previous job
-#          build-args: |
-#            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/base:latest
+#  # Job 2: Build dependent images after the base-debug image is ready
+#  build-dependent-images:
+#    # This 'needs' key ensures this job only runs after 'build-base' succeeds
+#    needs: build-base
+#    runs-on: ubuntu-latest
+#    permissions:
+#      contents: read
+#      packages: write
+#
+#    strategy:
+#      # This matrix now only contains images that depend on the base image
+#      matrix:
+#        image: [network-debug] # Add future images like 'java-debug' here
+#
+#    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@v4
+#
+#      - name: Hash Dockerfile
+#        id: file_hash
+#        run: |
+#          # Calculate a sha256 hash and take the first 8 characters
+#          echo "sha=$(shasum -a 256 images/${{ matrix.image }}/Containerfile | head -c 8)" >> $GITHUB_OUTPUT
+#
+#      - name: Set up QEMU
+#        uses: docker/setup-qemu-action@v3
+#
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v3
+#
+#      - name: Log in to the Container Registry
+#        uses: docker/login-action@v3
+#        with:
+#          registry: ${{ env.REGISTRY }}
+#          username: ${{ github.actor }}
+#          password: ${{ secrets.GITHUB_TOKEN }}
+#
+#      - name: Extract Docker metadata
+#        id: meta
+#        uses: docker/metadata-action@v5
+#        with:
+#          images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/debug-images/${{ matrix.image }}
+#          tags: |
+#            # Tag with 'latest'
+#            type=raw,value=latest,enable=true
+#            # Tag with a short hash of the Containerfile calculated in a previous step
+#            type=raw,value=cf-${{ steps.file_hash.outputs.sha }},enable=true
+#
+#      - name: Build and push Docker image
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: .
+#          file: ./images/${{ matrix.image }}/Containerfile
+#          platforms: linux/amd64,linux/arm64
+#          push: true
+#          tags: ${{ steps.meta.outputs.tags }}
+#          labels: ${{ steps.meta.outputs.labels }}
+#          # This build-arg now safely references the base image pushed in the previous job
+##          build-args: |
+##            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/base:latest
