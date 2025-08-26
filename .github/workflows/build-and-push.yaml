@@ -12,6 +12,7 @@ on:
 env:
   REGISTRY: ghcr.io
   ORGANISATION: gepardec
+  COSIGN_YES: "true"
 
 jobs:
   # Job 1: Build and push the base image first
@@ -126,7 +127,7 @@ jobs:
       # This step creates an attestation and attaches the SBOM to the image in the registry.
       - name: Attach SBOM to image with cosign
         run: |
-          cosign attest --predicate sbom.spdx.json --force --type spdxjson ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          cosign attest --predicate sbom.spdx.json --type spdxjson ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
 
 
 
