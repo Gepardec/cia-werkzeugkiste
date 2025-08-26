@@ -120,13 +120,13 @@ jobs:
 
       - name: Attach SBOM to image
         run: |
-          cosign attach sbom --sbom sbom.spdx.json ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          cosign attach sbom --yes --sbom sbom.spdx.json ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
 
       # Attach SBOM to image with cosign
       # This step creates an attestation and attaches the SBOM to the image in the registry.
       - name: Attach SBOM to image with cosign
         run: |
-          cosign attest --predicate sbom.spdx.json --type spdxjson ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          cosign attest --predicate sbom.spdx.json --yes --type spdxjson ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
 
 
 
