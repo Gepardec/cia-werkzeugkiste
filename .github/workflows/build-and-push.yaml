@@ -62,7 +62,6 @@ jobs:
         with:
           context: .
           file: ./images/base-debug/Containerfile
-          platforms: linux/amd64,linux/arm64
           load: true # Load into local docker daemon for scanning
           tags: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/debug-images/base-debug:scan
 
