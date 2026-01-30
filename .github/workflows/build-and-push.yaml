@@ -100,7 +100,7 @@ jobs:
       # Sign the immutable digest output from step before
       - name: Sign the published Docker image
         env:
-          TAGS: ${{ steps.meta.outputs.tags }}
+          TAGS: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/debug-images/base-debug
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
         run: |
           cosign sign --yes "${TAGS}@${DIGEST}"
@@ -201,7 +201,7 @@ jobs:
       # Sign the immutable digest output from step before
       - name: Sign the published Docker image
         env:
-          TAGS: ${{ steps.meta.outputs.tags }}
+          TAGS: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/debug-images/${{ matrix.image }}
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
         run: |
           cosign sign --yes "${TAGS}@${DIGEST}"
