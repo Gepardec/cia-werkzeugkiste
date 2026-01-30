@@ -21,6 +21,7 @@ jobs:
       contents: read
       packages: write
       security-events: write
+      id-token: write
 
     steps:
       - name: Checkout repository
@@ -37,6 +38,9 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.8.0
 
       - name: Log in to the Container Registry
         uses: docker/login-action@v3
@@ -83,6 +87,7 @@ jobs:
         continue-on-error: true
 
       - name: Build and push base image
+        id: build-and-push
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -92,6 +97,14 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
+      # Sign the immutable digest output from step before
+      - name: Sign the published Docker image
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.build-and-push.outputs.digest }}
+        run: |
+          cosign sign --yes "${TAGS}@${DIGEST}"
+
   # Job 2: Build dependent images after the base-debug image is ready
   build-dependent-images:
     # This 'needs' key ensures this job only runs after 'build-base' succeeds
@@ -100,6 +113,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+      security-events: write
+      id-token: write
 
     strategy:
       # This matrix now only contains images that depend on the base image
@@ -121,6 +136,9 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.8.0
 
       - name: Log in to the Container Registry
         uses: docker/login-action@v3
@@ -167,6 +185,7 @@ jobs:
         continue-on-error: true
 
       - name: Build and push Docker image
+        id: build-and-push
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -178,3 +197,11 @@ jobs:
           # This build-arg now safely references the base image pushed in the previous job
 #          build-args: |
 #            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/base:latest
+
+      # Sign the immutable digest output from step before
+      - name: Sign the published Docker image
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.build-and-push.outputs.digest }}
+        run: |
+          cosign sign --yes "${TAGS}@${DIGEST}"
