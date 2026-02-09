@@ -7,9 +7,9 @@ version: 2
 updates:
   - package-ecosystem: "docker" # See documentation for possible values
     directories:
-      - "/images/*"
+      - "/images"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     labels:
       - "dependencies"
-      - "docker"
+      - "images"
