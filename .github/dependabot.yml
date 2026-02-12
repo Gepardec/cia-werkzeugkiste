@@ -13,8 +13,7 @@ updates:
   - package-ecosystem: "docker" # See documentation for possible values
     directories:
       - "/images/*"
-    registries:
-      - dockerhub
+    registries: "*"
     schedule:
       interval: "weekly"
     labels:
