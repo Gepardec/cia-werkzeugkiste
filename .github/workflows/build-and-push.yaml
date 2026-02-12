@@ -37,7 +37,7 @@ jobs:
         id: file_hash
         run: |
           # Calculate a sha256 hash and take the first 8 characters
-          echo "sha=$(shasum -a 256 images/base-debug/Containerfile | head -c 8)" >> $GITHUB_OUTPUT
+          echo "sha=$(shasum -a 256 images/base-debug/Dockerfile | head -c 8)" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -71,7 +71,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./images/base-debug/Containerfile
+          file: ./images/base-debug/Dockerfile
           load: true # Load into local docker daemon for scanning
           tags: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/debug-images/base-debug:scan
 
@@ -97,7 +97,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./images/base-debug/Containerfile
+          file: ./images/base-debug/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -134,7 +134,7 @@ jobs:
         id: file_hash
         run: |
           # Calculate a sha256 hash and take the first 8 characters
-          echo "sha=$(shasum -a 256 images/${{ matrix.image }}/Containerfile | head -c 8)" >> $GITHUB_OUTPUT
+          echo "sha=$(shasum -a 256 images/${{ matrix.image }}/Dockerfile | head -c 8)" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -168,7 +168,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./images/base-debug/Containerfile
+          file: ./images/base-debug/Dockerfile
           load: true # Load into local docker daemon for scanning
           tags: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/debug-images/${{ matrix.image }}:scan
 
@@ -194,7 +194,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./images/${{ matrix.image }}/Containerfile
+          file: ./images/${{ matrix.image }}/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
