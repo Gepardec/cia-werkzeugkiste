@@ -4,10 +4,17 @@
 # https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 
 version: 2
+registries:
+  dockerhub:
+    type: docker-registry
+    username: ${{secrets.DOCKER_HUB_USERNAME}}
+    password: ${{secrets.DOCKER_HUB_PASSWORD}}
 updates:
   - package-ecosystem: "docker" # See documentation for possible values
     directories:
       - "/images/*"
+    registries:
+      - dockerhub
     schedule:
       interval: "weekly"
     labels:
