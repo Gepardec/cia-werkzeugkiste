@@ -9,6 +9,7 @@ registries:
     type: docker-registry
     username: ${{secrets.DOCKER_HUB_USERNAME}}
     password: ${{secrets.DOCKER_HUB_PASSWORD}}
+    replaces-base: true
 updates:
   - package-ecosystem: "docker" # See documentation for possible values
     directories:
