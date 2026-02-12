@@ -1,5 +1,11 @@
-name: Build and Push Debug Images
+# If you want to add a new image to be built and pushed to the container registry
+# You have to add it into the matrix of the second job, the name to add is the name of the folder where the Containerfile resides
 
+
+
+
+
+name: Build and Push Debug Images
 on:
   push:
     branches: [ "main" ]
@@ -117,9 +123,8 @@ jobs:
       id-token: write
 
     strategy:
-      # This matrix now only contains images that depend on the base image
       matrix:
-        image: [network-debug] # Add future images like 'java-debug' here
+        image: [network-debug] # Add future images like 'java-debug' here, name is the name of the folder
 
     steps:
       - name: Checkout repository

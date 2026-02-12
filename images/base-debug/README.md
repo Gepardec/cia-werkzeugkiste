@@ -23,7 +23,7 @@ Other specialized debugging images (e.g., for Java, k8s ..) can extend this base
 
 ## Key Features
 
-* **Non-Root by Default** 🔒: The container runs with a non-root user (`debuguser`) to enhance security and comply with best practices.
+Non-Root by Default: The container runs with a non-root user (`debuguser`) to enhance security and comply with best practices.
 
 ---
 
@@ -32,5 +32,5 @@ Other specialized debugging images (e.g., for Java, k8s ..) can extend this base
 To start a shell session inside this container for general-purpose debugging, run the following command:
 
 ```bash
-docker run -it --rm ghcr.io/gepardec/debug-images/base-debug:latest
+podman run -it --rm ghcr.io/gepardec/debug-images/base-debug:latest
 ```
