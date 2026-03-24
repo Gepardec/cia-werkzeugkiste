@@ -1,4 +1,4 @@
-FROM debian:12-slim
+FROM debian:13-slim
 
 # Set environment variables to ensure non-interactive package installation
 ENV DEBIAN_FRONTEND=noninteractive
