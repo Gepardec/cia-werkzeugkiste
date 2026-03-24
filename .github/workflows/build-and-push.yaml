@@ -78,7 +78,7 @@ jobs:
       # Scan the local image with Trivy
       # This checks the OS packages (apt) and other deps
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: '${{ env.REGISTRY }}/${{ env.ORGANISATION }}/debug-images/base-debug:scan'
           format: 'sarif'
@@ -175,7 +175,7 @@ jobs:
       # Scan the local image with Trivy
       # This checks the OS packages (apt) and other deps
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: '${{ env.REGISTRY }}/${{ env.ORGANISATION }}/debug-images/${{ matrix.image }}:scan'
           format: 'sarif'
