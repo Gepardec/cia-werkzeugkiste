@@ -1,0 +1,82 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  log_level: info
+  grpc_server_max_concurrent_streams: 1000
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 512
+
+limits_config:
+  # Keep historical files ingestible. Your previous config rejected samples older than 7 days.
+  reject_old_samples: false
+
+  # Higher local ingest/query limits for bulk log analysis. Tune down on small machines.
+  ingestion_rate_mb: 64
+  ingestion_burst_size_mb: 128
+  per_stream_rate_limit: 16MB
+  per_stream_rate_limit_burst: 32MB
+  max_global_streams_per_user: 0
+  max_entries_limit_per_query: 100000
+  max_query_series: 100000
+  query_timeout: 10m
+  split_queries_by_interval: 24h
+  max_query_length: 0s
+
+  # Retention is disabled by default. Enable compactor retention below if you want auto-delete.
+  retention_period: 0s
+
+  metric_aggregation_enabled: true
+  enable_multi_variant_queries: true
+  shard_streams:
+    enabled: true
+    time_sharding_enabled: true
+
+schema_config:
+  configs:
+    - from: 2024-04-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+pattern_ingester:
+  enabled: true
+  metric_aggregation:
+    loki_address: localhost:3100
+
+ruler:
+  alertmanager_url: http://localhost:9093
+
+frontend:
+  encoding: protobuf
+
+analytics:
+  reporting_enabled: false
+
+# Optional retention example. Uncomment both this block and set limits_config.retention_period above.
+# compactor:
+#   working_directory: /loki/compactor
+#   retention_enabled: true
+#   retention_delete_delay: 2h
+#   delete_request_store: filesystem

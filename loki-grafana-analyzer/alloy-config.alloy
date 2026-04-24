@@ -1,0 +1,43 @@
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+// Watches local files mounted from ./logs.
+// Add .log, .txt, .json, and rotated logs anywhere under ./logs.
+local.file_match "local_logs" {
+  path_targets = [
+    {"__path__" = "/logs/**/*.log",  "job" = "local_logs"},
+    {"__path__" = "/logs/**/*.txt",  "job" = "local_logs"},
+    {"__path__" = "/logs/**/*.json", "job" = "local_logs"},
+    {"__path__" = "/logs/**/*.log.*", "job" = "local_logs"},
+  ]
+}
+
+loki.source.file "local_logs" {
+  targets       = local.file_match.local_logs.targets
+  forward_to    = [loki.process.local_logs.receiver]
+  tail_from_end = false
+}
+
+loki.process "local_logs" {
+  // Parse an ISO-8601/RFC3339 timestamp at the beginning of each line when present.
+  // If a line does not match, Loki receives the original line with scrape time.
+  stage.regex {
+    expression = "^(?P<ts>\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2}))\\s*(?P<message>.*)$"
+  }
+
+  stage.timestamp {
+    source            = "ts"
+    format            = "RFC3339Nano"
+    action_on_failure = "skip"
+  }
+
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
