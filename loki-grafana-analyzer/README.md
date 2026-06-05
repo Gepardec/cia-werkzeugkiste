@@ -1,102 +1,74 @@
-# Loki + Grafana local log-analysis stack
+# Switchable Loki / VictoriaLogs log-analysis stack
 
-## Folder layout
+One active backend at a time:
 
-```text
-.
-├── docker-compose.yaml
-├── loki-config.yaml
-├── alloy-config.alloy
-├── grafana/
-│   └── provisioning/
-│       └── datasources/
-│           └── loki.yaml
-└── logs/
-    └── put-your-log-files-here.log
-```
+- Loki: Loki + Alloy + Grafana
+- VictoriaLogs: VictoriaLogs + Alloy + Grafana with the VictoriaLogs datasource plugin
 
-## Start
+## Setup
 
 ```bash
 mkdir -p logs
-# Copy your .log, .txt, .json, or rotated .log.* files into ./logs.
-# Compressed archives are ignored by default.
-# Example: cp -r /path/to/logs/* ./logs/
-
 cp .env.example .env
-# Optional: edit .env and set GF_SECURITY_ADMIN_PASSWORD to a non-default value.
-
-docker compose up -d
 ```
 
-Open Grafana:
+Put `.log`, `.txt`, `.json`, or rotated `.log.*` files in `./logs`. Compressed archives are ignored by default.
 
-```text
-http://localhost:3000
+## Start or switch backend
+
+```bash
+./log-stack loki
+./log-stack victorialogs
 ```
 
-Default login:
+`./log-stack vl` is an alias for VictoriaLogs. The script uses Docker Compose overrides with `--remove-orphans`, so switching removes the previous backend container.
 
-```text
-User: admin
-Password: value of GF_SECURITY_ADMIN_PASSWORD in .env, or admin if unchanged
-```
+## Open
 
-Useful health/debug endpoints:
+- Grafana: http://localhost:3000
+- Login: `admin` / `GF_SECURITY_ADMIN_PASSWORD` from `.env`, or `admin`
+- Loki ready: http://localhost:3100/ready
+- VictoriaLogs: http://localhost:9428
+- VictoriaLogs UI: http://localhost:9428/select/vmui/
+- Alloy UI: http://localhost:12345
 
-```text
-Loki ready:  http://localhost:3100/ready
-Alloy UI:    http://localhost:12345
-```
+## Query examples
 
-## Query examples in Grafana Explore
+Loki:
 
 ```logql
 {job="local_logs"}
-```
-
-```logql
 {job="local_logs"} |= "ERROR"
 ```
 
-```logql
-{job="local_logs"} | json
+VictoriaLogs:
+
+```text
+*
+{job="local_logs"}
+{job="local_logs"} i(error)
 ```
 
-```logql
-{job="local_logs"} | logfmt
-```
-
-## Re-ingest from the beginning
-
-Alloy stores file positions in the `alloy-data` Docker volume. If you want to re-read the same files from the beginning, remove the volumes:
+## Useful commands
 
 ```bash
-docker compose down -v
-docker compose up -d
+./log-stack help
+./log-stack ps-loki
+./log-stack ps-victorialogs
+./log-stack down
+./log-stack config-loki
+./log-stack config-victorialogs
 ```
 
-This also deletes Loki and Grafana persisted data. To reset only Alloy positions, remove only the Alloy volume:
+## Reset
+
+Alloy positions are backend-specific, so VictoriaLogs can ingest the same local files after Loki has already read them.
 
 ```bash
-docker compose down
-docker volume rm loki-grafana-log-analysis_alloy-data
-docker compose up -d
+./log-stack reset-loki-data
+./log-stack reset-loki-positions
+./log-stack reset-victorialogs-data
+./log-stack reset-victorialogs-positions
 ```
 
-## Retention
-
-Retention is disabled by default so your imported log data is not deleted unexpectedly. To enable automatic deletion, set `limits_config.retention_period` in `loki-config.yaml` and uncomment the `compactor` block at the bottom of that file.
-
-Example:
-
-```yaml
-limits_config:
-  retention_period: 720h  # 30 days
-
-compactor:
-  working_directory: /loki/compactor
-  retention_enabled: true
-  retention_delete_delay: 2h
-  delete_request_store: filesystem
-```
+Loki retention is disabled in `loki-config.yaml`. VictoriaLogs runs with `-retentionPeriod=100y`.
