@@ -43,6 +43,7 @@ loki.process "local_logs" {
 
 loki.write "local" {
   endpoint {
-    url = "http://victorialogs:9428/insert/loki/api/v1/push?_stream_fields=job"
+    // Keep each file line as _msg so arbitrary plaintext and JSON logs render consistently.
+    url = "http://victorialogs:9428/insert/loki/api/v1/push?_stream_fields=job&disable_message_parsing=1"
   }
 }
