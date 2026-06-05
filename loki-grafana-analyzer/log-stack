@@ -1,0 +1,86 @@
+#!/bin/sh
+set -eu
+
+cd "$(dirname "$0")"
+
+compose_loki() {
+  docker compose -f docker-compose.yaml -f docker-compose.loki.yaml "$@"
+}
+
+compose_victorialogs() {
+  docker compose -f docker-compose.yaml -f docker-compose.victorialogs.yaml "$@"
+}
+
+usage() {
+  cat <<'EOF'
+Usage: ./log-stack <command>
+
+Commands:
+  loki                         Start Loki mode
+  victorialogs                 Start VictoriaLogs mode
+  vl                           Alias for VictoriaLogs mode
+  ps-loki                      Show Loki-mode container status
+  ps-victorialogs              Show VictoriaLogs-mode container status
+  down                         Stop the active stack
+  config-loki                  Validate Loki compose config
+  config-victorialogs          Validate VictoriaLogs compose config
+  reset-loki-data              Remove Loki data volume
+  reset-loki-positions         Remove Loki Alloy positions volume
+  reset-victorialogs-data      Remove VictoriaLogs data volume
+  reset-victorialogs-positions Remove VictoriaLogs Alloy positions volume
+EOF
+}
+
+remove_volume() {
+  docker volume rm "$1" 2>/dev/null || true
+}
+
+command="${1:-help}"
+
+case "$command" in
+  loki)
+    compose_loki up -d --remove-orphans
+    ;;
+  victorialogs|vl)
+    compose_victorialogs up -d --remove-orphans
+    ;;
+  ps-loki)
+    compose_loki ps --all
+    ;;
+  ps-victorialogs)
+    compose_victorialogs ps --all
+    ;;
+  down)
+    compose_loki down --remove-orphans
+    compose_victorialogs down --remove-orphans
+    ;;
+  config-loki)
+    compose_loki config
+    ;;
+  config-victorialogs)
+    compose_victorialogs config
+    ;;
+  reset-loki-data)
+    compose_loki down
+    remove_volume loki-grafana-log-analysis_loki-data
+    ;;
+  reset-loki-positions)
+    compose_loki down
+    remove_volume loki-grafana-log-analysis_alloy-data
+    ;;
+  reset-victorialogs-data)
+    compose_victorialogs down
+    remove_volume loki-grafana-log-analysis_victorialogs-data
+    ;;
+  reset-victorialogs-positions)
+    compose_victorialogs down
+    remove_volume loki-grafana-log-analysis_alloy-data-victorialogs
+    ;;
+  help|-h|--help)
+    usage
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac

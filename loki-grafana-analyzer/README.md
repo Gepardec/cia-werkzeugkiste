@@ -1,21 +1,28 @@
-# Loki + Grafana local log-analysis stack
+# Switchable Loki / VictoriaLogs local log-analysis stack
 
 ## Folder layout
 
 ```text
 .
 ├── docker-compose.yaml
+├── docker-compose.loki.yaml
+├── docker-compose.victorialogs.yaml
+├── log-stack
 ├── loki-config.yaml
 ├── alloy-config.alloy
+├── alloy-config.victorialogs.alloy
 ├── grafana/
-│   └── provisioning/
+│   ├── provisioning/
+│   │   └── datasources/
+│   │       └── loki.yaml
+│   └── provisioning-victorialogs/
 │       └── datasources/
-│           └── loki.yaml
+│           └── victorialogs.yaml
 └── logs/
     └── put-your-log-files-here.log
 ```
 
-## Start
+## Start a backend
 
 ```bash
 mkdir -p logs
@@ -25,9 +32,21 @@ mkdir -p logs
 
 cp .env.example .env
 # Optional: edit .env and set GF_SECURITY_ADMIN_PASSWORD to a non-default value.
-
-docker compose up -d
 ```
+
+Start Loki mode:
+
+```bash
+./log-stack loki
+```
+
+Start VictoriaLogs mode:
+
+```bash
+./log-stack victorialogs
+```
+
+`./log-stack vl` is a shorter alias for VictoriaLogs mode. The script wraps the explicit Docker Compose override commands and keeps `--remove-orphans` enabled for switching backends.
 
 Open Grafana:
 
@@ -45,11 +64,13 @@ Password: value of GF_SECURITY_ADMIN_PASSWORD in .env, or admin if unchanged
 Useful health/debug endpoints:
 
 ```text
-Loki ready:  http://localhost:3100/ready
-Alloy UI:    http://localhost:12345
+Loki ready endpoint:       http://localhost:3100/ready
+VictoriaLogs endpoint:     http://localhost:9428
+VictoriaLogs built-in UI:  http://localhost:9428/select/vmui/
+Alloy UI:                  http://localhost:12345
 ```
 
-## Query examples in Grafana Explore
+## Loki query examples in Grafana Explore
 
 ```logql
 {job="local_logs"}
@@ -67,21 +88,46 @@ Alloy UI:    http://localhost:12345
 {job="local_logs"} | logfmt
 ```
 
-## Re-ingest from the beginning
+## VictoriaLogs query examples in Grafana Explore
 
-Alloy stores file positions in the `alloy-data` Docker volume. If you want to re-read the same files from the beginning, remove the volumes:
-
-```bash
-docker compose down -v
-docker compose up -d
+```text
+*
 ```
 
-This also deletes Loki and Grafana persisted data. To reset only Alloy positions, remove only the Alloy volume:
+```text
+{job="local_logs"}
+```
+
+```text
+{job="local_logs"} i(error)
+```
+
+## Reset data or file positions
+
+Alloy stores file positions in backend-specific Docker volumes. This lets VictoriaLogs ingest the same local files even after Loki has already read them.
+
+Reset Loki data:
 
 ```bash
-docker compose down
-docker volume rm loki-grafana-log-analysis_alloy-data
-docker compose up -d
+./log-stack reset-loki-data
+```
+
+Reset Loki Alloy positions:
+
+```bash
+./log-stack reset-loki-positions
+```
+
+Reset VictoriaLogs data:
+
+```bash
+./log-stack reset-victorialogs-data
+```
+
+Reset VictoriaLogs Alloy positions:
+
+```bash
+./log-stack reset-victorialogs-positions
 ```
 
 ## Retention
