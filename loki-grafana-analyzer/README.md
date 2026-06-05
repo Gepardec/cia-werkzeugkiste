@@ -14,6 +14,8 @@ cp .env.example .env
 
 Put `.log`, `.txt`, `.json`, or rotated `.log.*` files in `./logs`. Compressed archives are ignored by default.
 
+VictoriaLogs mode stores every file line as the raw `_msg` value so arbitrary plaintext, access logs, and JSON logs all render consistently. Parse JSON at query time when needed.
+
 ## Start or switch backend
 
 ```bash
@@ -47,6 +49,7 @@ VictoriaLogs:
 *
 {job="local_logs"}
 {job="local_logs"} i(error)
+* | unpack_json
 ```
 
 ## Useful commands
@@ -63,6 +66,7 @@ VictoriaLogs:
 ## Reset
 
 Alloy positions are backend-specific, so VictoriaLogs can ingest the same local files after Loki has already read them.
+After changing parser behavior or replacing log files, reset both the backend data and the matching Alloy positions before re-ingesting.
 
 ```bash
 ./log-stack reset-loki-data
