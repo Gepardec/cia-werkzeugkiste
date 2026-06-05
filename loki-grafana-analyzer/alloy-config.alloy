@@ -5,12 +5,17 @@ logging {
 
 // Watches local files mounted from ./logs.
 // Add .log, .txt, .json, and rotated logs anywhere under ./logs.
+// Compressed and archive files are excluded unless decompression is configured.
 local.file_match "local_logs" {
   path_targets = [
     {"__path__" = "/logs/**/*.log",  "job" = "local_logs"},
     {"__path__" = "/logs/**/*.txt",  "job" = "local_logs"},
     {"__path__" = "/logs/**/*.json", "job" = "local_logs"},
-    {"__path__" = "/logs/**/*.log.*", "job" = "local_logs"},
+    {
+      "__path__"         = "/logs/**/*.log.*",
+      "__path_exclude__" = "/logs/**/*.{gz,zip,bz2,z,tar,tar.gz,tgz}",
+      "job"              = "local_logs",
+    },
   ]
 }
 

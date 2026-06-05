@@ -21,3 +21,11 @@ updates:
     labels:
       - "dependencies"
       - "images"
+  - package-ecosystem: "docker-compose"
+    directory: "/loki-grafana-analyzer"
+    registries: "*"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "images"

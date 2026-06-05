@@ -19,8 +19,12 @@
 
 ```bash
 mkdir -p logs
-# Copy your .log, .txt, .json, or rotated .log.* files into ./logs
+# Copy your .log, .txt, .json, or rotated .log.* files into ./logs.
+# Compressed archives are ignored by default.
 # Example: cp -r /path/to/logs/* ./logs/
+
+cp .env.example .env
+# Optional: edit .env and set GF_SECURITY_ADMIN_PASSWORD to a non-default value.
 
 docker compose up -d
 ```
@@ -34,7 +38,8 @@ http://localhost:3000
 Default login:
 
 ```text
-admin / admin
+User: admin
+Password: value of GF_SECURITY_ADMIN_PASSWORD in .env, or admin if unchanged
 ```
 
 Useful health/debug endpoints:
