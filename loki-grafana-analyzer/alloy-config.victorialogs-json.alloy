@@ -81,7 +81,8 @@ loki.process "local_logs" {
 
 loki.write "local" {
   endpoint {
-    // Structured JSON profile: parse JSON fields at ingest time and pick a common message field for _msg.
-    url = "http://victorialogs:9428/insert/loki/api/v1/push?_stream_fields=job&_msg_field=_msg,message,msg,log,event.original,body,text"
+    // Structured JSON profile: parse JSON fields at ingest time and pick a common display field for _msg.
+    // @timestamp is the last fallback so JSON records without a message-like field still render in Grafana.
+    url = "http://victorialogs:9428/insert/loki/api/v1/push?_stream_fields=job&_msg_field=_msg,message,msg,log,log.message,event.original,event.message,body,text,error.message,exception.message,detail,details,summary,title,event.action,@timestamp"
   }
 }
