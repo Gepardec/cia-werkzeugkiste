@@ -11,23 +11,38 @@ compose_victorialogs() {
   docker compose -f docker-compose.yaml -f docker-compose.victorialogs.yaml "$@"
 }
 
+compose_victorialogs_json() {
+  docker compose -f docker-compose.yaml -f docker-compose.victorialogs-json.yaml "$@"
+}
+
 usage() {
   cat <<'EOF'
 Usage: ./log-stack <command>
 
 Commands:
   loki                         Start Loki mode
-  victorialogs                 Start VictoriaLogs mode
-  vl                           Alias for VictoriaLogs mode
+  victorialogs                 Start VictoriaLogs raw/non-JSON mode
+  victorialogs-raw             Alias for VictoriaLogs raw/non-JSON mode
+  vl                           Alias for VictoriaLogs raw/non-JSON mode
+  vl-raw                       Alias for VictoriaLogs raw/non-JSON mode
+  victorialogs-json            Start VictoriaLogs JSON parser mode
+  vl-json                      Alias for VictoriaLogs JSON parser mode
+  vlj                          Alias for VictoriaLogs JSON parser mode
   ps-loki                      Show Loki-mode container status
-  ps-victorialogs              Show VictoriaLogs-mode container status
+  ps-victorialogs              Show VictoriaLogs raw-mode container status
+  ps-victorialogs-json         Show VictoriaLogs JSON-mode container status
   down                         Stop the active stack
   config-loki                  Validate Loki compose config
-  config-victorialogs          Validate VictoriaLogs compose config
+  config-victorialogs          Validate VictoriaLogs raw compose config
+  config-victorialogs-json     Validate VictoriaLogs JSON compose config
   reset-loki-data              Remove Loki data volume
   reset-loki-positions         Remove Loki Alloy positions volume
   reset-victorialogs-data      Remove VictoriaLogs data volume
-  reset-victorialogs-positions Remove VictoriaLogs Alloy positions volume
+  reset-victorialogs-positions Remove VictoriaLogs raw Alloy positions volume
+  reset-victorialogs-json-positions
+                               Remove VictoriaLogs JSON Alloy positions volume
+  reset-victorialogs-all-positions
+                               Remove both VictoriaLogs Alloy positions volumes
 EOF
 }
 
@@ -41,8 +56,11 @@ case "$command" in
   loki)
     compose_loki up -d --remove-orphans
     ;;
-  victorialogs|vl)
+  victorialogs|victorialogs-raw|vl|vl-raw)
     compose_victorialogs up -d --remove-orphans
+    ;;
+  victorialogs-json|vl-json|vlj)
+    compose_victorialogs_json up -d --remove-orphans
     ;;
   ps-loki)
     compose_loki ps --all
@@ -50,15 +68,22 @@ case "$command" in
   ps-victorialogs)
     compose_victorialogs ps --all
     ;;
+  ps-victorialogs-json)
+    compose_victorialogs_json ps --all
+    ;;
   down)
     compose_loki down --remove-orphans
     compose_victorialogs down --remove-orphans
+    compose_victorialogs_json down --remove-orphans
     ;;
   config-loki)
     compose_loki config
     ;;
   config-victorialogs)
     compose_victorialogs config
+    ;;
+  config-victorialogs-json)
+    compose_victorialogs_json config
     ;;
   reset-loki-data)
     compose_loki down
@@ -70,11 +95,22 @@ case "$command" in
     ;;
   reset-victorialogs-data)
     compose_victorialogs down
+    compose_victorialogs_json down
     remove_volume loki-grafana-log-analysis_victorialogs-data
     ;;
   reset-victorialogs-positions)
     compose_victorialogs down
     remove_volume loki-grafana-log-analysis_alloy-data-victorialogs
+    ;;
+  reset-victorialogs-json-positions)
+    compose_victorialogs_json down
+    remove_volume loki-grafana-log-analysis_alloy-data-victorialogs-json
+    ;;
+  reset-victorialogs-all-positions)
+    compose_victorialogs down
+    compose_victorialogs_json down
+    remove_volume loki-grafana-log-analysis_alloy-data-victorialogs
+    remove_volume loki-grafana-log-analysis_alloy-data-victorialogs-json
     ;;
   help|-h|--help)
     usage
