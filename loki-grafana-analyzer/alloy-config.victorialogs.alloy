@@ -38,12 +38,24 @@ loki.process "local_logs" {
     action_on_failure = "skip"
   }
 
+  // Parse the timestamp used by Apache/Nginx combined and common access logs.
+  stage.regex {
+    expression = "^[^\\[]*\\[(?P<access_timestamp>\\d{2}/[A-Za-z]{3}/\\d{4}:\\d{2}:\\d{2}:\\d{2} [+-]\\d{4})\\]"
+  }
+
+  stage.timestamp {
+    source            = "access_timestamp"
+    format            = "02/Jan/2006:15:04:05 -0700"
+    action_on_failure = "skip"
+  }
+
   forward_to = [loki.write.local.receiver]
 }
 
 loki.write "local" {
   endpoint {
-    // Keep each file line as _msg so arbitrary plaintext and JSON logs render consistently.
-    url = "http://victorialogs:9428/insert/loki/api/v1/push?_stream_fields=job&disable_message_parsing=1"
+    // Keep each file line as _msg. VictoriaLogs uses all Loki labels, including
+    // filename, as stream fields unless _stream_fields is explicitly overridden.
+    url = "http://victorialogs:9428/insert/loki/api/v1/push?disable_message_parsing=1"
   }
 }

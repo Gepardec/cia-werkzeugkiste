@@ -13,4 +13,5 @@ datasources:
     editable: true
     jsonData:
       timeout: 600
+      maxLines: 1000
       multitenancyHeaders: {}

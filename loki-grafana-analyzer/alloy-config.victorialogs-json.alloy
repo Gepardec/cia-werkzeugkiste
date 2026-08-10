@@ -76,13 +76,26 @@ loki.process "local_logs" {
     action_on_failure = "skip"
   }
 
+  // Parse the timestamp used by Apache/Nginx combined and common access logs.
+  stage.regex {
+    expression = "^[^\\[]*\\[(?P<access_timestamp>\\d{2}/[A-Za-z]{3}/\\d{4}:\\d{2}:\\d{2}:\\d{2} [+-]\\d{4})\\]"
+  }
+
+  stage.timestamp {
+    source            = "access_timestamp"
+    format            = "02/Jan/2006:15:04:05 -0700"
+    action_on_failure = "skip"
+  }
+
   forward_to = [loki.write.local.receiver]
 }
 
 loki.write "local" {
   endpoint {
-    // Structured JSON profile: parse JSON fields at ingest time and pick a common display field for _msg.
-    // @timestamp is the last fallback so JSON records without a message-like field still render in Grafana.
-    url = "http://victorialogs:9428/insert/loki/api/v1/push?_stream_fields=job&_msg_field=_msg,message,msg,log,log.message,event.original,event.message,body,text,error.message,exception.message,detail,details,summary,title,event.action,@timestamp"
+    // VictoriaLogs parses valid JSON messages into fields and keeps non-JSON access
+    // lines intact. Select the first common JSON message field explicitly so v1.50
+    // does not replace _msg with its default value after parsing. Stream labels are
+    // left untouched, so Alloy's filename label remains part of the stream.
+    url = "http://victorialogs:9428/insert/loki/api/v1/push?_msg_field=message,msg,log,log.message,event.original,event.message,body,text,error.message,exception.message,detail,details,summary,title,event.action"
   }
 }
