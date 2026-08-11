@@ -2,15 +2,21 @@
 
 ## Architecture Overview
 
-Alloy continues to send Loki-compatible batches. VictoriaLogs owns Loki-envelope decoding and structured-message parsing; Alloy only extracts supported source timestamps. The raw profile opts out of structured-message parsing, while the JSON profile uses the default parser and falls back naturally to the original message for non-JSON access lines.
+Alloy continues to send Loki-compatible batches. VictoriaLogs owns Loki-envelope decoding and structured-message parsing. Alloy extracts supported source timestamps and, for JSON objects, injects a copy of the complete original object as `_msg` so the default log view is useful without sacrificing indexed fields. The raw profile opts out of structured-message parsing, while non-JSON access lines pass through unchanged.
 
 ## Technical Decisions
 
 ### Decision 1: Preserve streams and select structured messages
 
-**Decision:** Remove `_stream_fields` overrides from both URLs. Keep `disable_message_parsing=1` in raw mode and use an explicit list of common message fields in structured mode, followed by the supported timestamp fields as fallbacks.
+**Decision:** Remove `_stream_fields` overrides from both URLs. Keep `disable_message_parsing=1` in raw mode. In structured mode, copy JSON objects into an injected `_msg`, prefer real message fields when present, and otherwise select the injected copy.
 
-**Rationale:** VictoriaLogs treats Loki labels as stream fields by default, preserving `filename`. On v1.50, selecting common fields such as `message`, `msg`, `log`, and `body` prevents parsed JSON records from receiving the missing-message default. Timestamp candidates guarantee the same behavior for valid structured events that intentionally have no message property, without discarding their other fields.
+**Rationale:** VictoriaLogs treats Loki labels as stream fields by default, preserving `filename`. On v1.50, selecting common fields such as `message`, `msg`, `log`, and `body` prevents parsed JSON records from receiving the missing-message default. The injected `_msg` gives arbitrary message-less JSON a meaningful initial display while automatic parsing keeps every source field indexed.
+
+### Decision 4: Make JSON re-ingestion atomic for operators
+
+**Decision:** Add `reingest-victorialogs-json`, which stops both VictoriaLogs profiles, removes backend data and both VictoriaLogs Alloy position volumes, then starts structured mode.
+
+**Rationale:** Stored `_time` and `_msg` values are immutable. A single explicit command prevents partial resets that leave stale data or consumed file positions behind.
 
 ### Decision 3: Parse access-log event time
 
@@ -33,10 +39,10 @@ No new dependencies introduced. The diagnostic uses the existing Docker CLI and 
 - Validate all Compose profiles with `docker compose config`.
 - Validate `log-stack` with `sh -n`.
 - Assert VictoriaLogs write URLs match the intended raw and structured contracts.
-- Ingest a few hundred timestamp-only structured records and verify count, `_time`, `_msg`, and an arbitrary field.
+- Ingest a few hundred `@timestamp`-only structured records and verify count, exact `_time`, complete JSON `_msg`, and arbitrary nested fields.
 - Run the live diagnostic when Docker is available.
 
 ## Risks & Mitigations
 
 - **Risk:** Historic timestamps may fall outside Grafana's current time range. **Mitigation:** Document widening the Explore time range and expose direct query diagnostics.
-- **Risk:** Existing Alloy positions prevent re-reading files after the config changes. **Mitigation:** Keep backend-specific reset commands and document the exact reset/start sequence.
+- **Risk:** Existing Alloy positions prevent re-reading files after the config changes. **Mitigation:** Provide one explicit reset-and-reingest command while retaining the granular reset commands.

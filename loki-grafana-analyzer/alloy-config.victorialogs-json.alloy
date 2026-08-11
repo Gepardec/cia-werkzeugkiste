@@ -87,16 +87,31 @@ loki.process "local_logs" {
     action_on_failure = "skip"
   }
 
+  // Keep the complete original JSON object as the default displayed message while
+  // VictoriaLogs also parses and indexes all of its fields. Plain access-log lines
+  // don't match json_object and therefore pass through unchanged.
+  stage.regex {
+    expression = "^\\s*(?P<json_object>\\{.*\\})\\s*$"
+  }
+
+  stage.template {
+    source   = "display_entry"
+    template = `{{ if .json_object }}{"_msg":{{ .json_object | toJson }},{{ TrimPrefix .json_object "{" }}{{ else }}{{ .Entry }}{{ end }}`
+  }
+
+  stage.output {
+    source = "display_entry"
+  }
+
   forward_to = [loki.write.local.receiver]
 }
 
 loki.write "local" {
   endpoint {
     // VictoriaLogs parses valid JSON messages into fields and keeps non-JSON access
-    // lines intact. Select the first common JSON message field explicitly so v1.50
-    // does not replace _msg with its default value after parsing. Timestamp fields
-    // are last-resort fallbacks for structured events without a message-like field.
-    // Stream labels are left untouched, so filename remains part of the stream.
-    url = "http://victorialogs:9428/insert/loki/api/v1/push?_msg_field=message,msg,log,log.message,event.original,event.message,body,text,error.message,exception.message,detail,details,summary,title,event.action,@timestamp,timestamp,time,ts"
+    // lines intact. Prefer a real message-like field when one exists; otherwise use
+    // the _msg copy of the complete JSON line created above. Timestamp fields remain
+    // fallbacks for JSON delivered by other Loki clients. Stream labels remain untouched.
+    url = "http://victorialogs:9428/insert/loki/api/v1/push?_msg_field=message,msg,log,log.message,event.original,event.message,body,text,error.message,exception.message,detail,details,summary,title,event.action,_msg,@timestamp,timestamp,time,ts"
   }
 }
