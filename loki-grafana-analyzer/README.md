@@ -20,17 +20,19 @@ Choose a VictoriaLogs parser profile before ingesting:
 - Raw/non-JSON mode stores every file line unchanged as `_msg`. Use it when exact line fidelity matters and parse JSON later with `unpack_json`.
 - Structured/mixed mode is recommended when a folder contains JSON-lines application logs and access logs. VictoriaLogs parses valid JSON messages into fields and keeps non-JSON lines unchanged. A common message field such as `message`, `msg`, `log`, or `body` is displayed when present; otherwise `_msg` contains the complete original JSON object, so the initial log view is never blank while the other fields remain queryable. Alloy stores `@timestamp`, `timestamp`, `time`, or `ts` as event time, recognizes ISO-8601 timestamps at the start of a line, and parses Apache/Nginx access timestamps such as `[31/Jul/2026:12:30:00 +0200]`.
 
+Both VictoriaLogs modes extract JSON event time. Supported values include RFC3339/ISO-8601 (including space or comma variants) and Unix seconds, milliseconds, microseconds, or nanoseconds. The plain `victorialogs` command selects structured/mixed mode by default.
+
 If you switch parser profiles for the same files, reset VictoriaLogs data and the matching Alloy positions before re-ingesting.
 
 ## Start or switch backend
 
 ```bash
 ./log-stack loki
-./log-stack victorialogs      # raw/non-JSON mode
-./log-stack victorialogs-json # structured/mixed mode (JSON + access logs)
+./log-stack victorialogs      # structured/mixed mode (JSON + access logs)
+./log-stack victorialogs-raw  # raw/non-JSON mode
 ```
 
-`./log-stack vl` is an alias for VictoriaLogs raw/non-JSON mode. `./log-stack vlj` is an alias for VictoriaLogs JSON mode. The script uses Docker Compose overrides with `--remove-orphans`, so switching removes the previous backend container.
+`./log-stack vl`, `./log-stack vlj`, and `./log-stack victorialogs-json` are aliases for structured/mixed mode. Raw mode must be selected explicitly with `./log-stack victorialogs-raw`. The script uses Docker Compose overrides with `--remove-orphans`, so switching removes the previous backend container.
 
 ## Open
 
@@ -75,24 +77,19 @@ VictoriaLogs:
 
 ## Reset
 
-Alloy positions are backend-specific, so VictoriaLogs can ingest the same local files after Loki has already read them.
-After changing parser behavior or replacing log files, reset both the backend data and the matching Alloy positions before re-ingesting.
+Reset every Loki/VictoriaLogs backend data volume and every Alloy positions volume with one command. Grafana data is preserved:
 
 ```bash
-./log-stack reset-loki-data
-./log-stack reset-loki-positions
-./log-stack reset-victorialogs-data
-./log-stack reset-victorialogs-positions
-./log-stack reset-victorialogs-json-positions
-./log-stack reset-victorialogs-all-positions
+./log-stack reset
 ```
 
 ## VictoriaLogs troubleshooting
 
-For a mixed folder of JSON application logs and access logs, reset and re-ingest everything in JSON mode with one command after this configuration change:
+For a mixed folder of JSON application logs and access logs, reset all stored backend data and positions, then start JSON mode:
 
 ```bash
-./log-stack reingest-victorialogs-json
+./log-stack reset
+./log-stack victorialogs-json
 ```
 
 After startup, `./log-stack check-victorialogs` optionally verifies backend health and the LogsQL query endpoint.

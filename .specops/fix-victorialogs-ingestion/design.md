@@ -12,11 +12,17 @@ Alloy continues to send Loki-compatible batches. VictoriaLogs owns Loki-envelope
 
 **Rationale:** VictoriaLogs treats Loki labels as stream fields by default, preserving `filename`. On v1.50, selecting common fields such as `message`, `msg`, `log`, and `body` prevents parsed JSON records from receiving the missing-message default. The injected `_msg` gives arbitrary message-less JSON a meaningful initial display while automatic parsing keeps every source field indexed.
 
-### Decision 4: Make JSON re-ingestion atomic for operators
+### Decision 4: Provide one universal backend reset
 
-**Decision:** Add `reingest-victorialogs-json`, which stops both VictoriaLogs profiles, removes backend data and both VictoriaLogs Alloy position volumes, then starts structured mode.
+**Decision:** Expose only `./log-stack reset` for reset operations. It stops every profile and removes Loki data, VictoriaLogs data, and all three backend-specific Alloy positions volumes. Grafana data remains intact.
 
-**Rationale:** Stored `_time` and `_msg` values are immutable. A single explicit command prevents partial resets that leave stale data or consumed file positions behind.
+**Rationale:** Stored `_time` and `_msg` values are immutable. A single universal command prevents partial resets, removes operational ambiguity, and lets the operator choose which backend to start afterward.
+
+### Decision 5: Parse JSON time in every VictoriaLogs mode
+
+**Decision:** Extract the first available `@timestamp`, `timestamp`, `time`, or `ts` value in both profiles. Parse textual ISO/RFC variants directly and route integer Unix values by digit length to seconds, milliseconds, microseconds, or nanoseconds. Make `victorialogs` select structured/mixed mode and require `victorialogs-raw` for raw mode.
+
+**Rationale:** Loki ingestion takes event time from the protocol envelope, not from VictoriaLogs' parsed JSON fields. The raw profile therefore needs the same timestamp stages, and numeric formats cannot safely share a fallback list because a nanosecond integer is syntactically valid—but incorrect—as Unix seconds.
 
 ### Decision 3: Parse access-log event time
 
@@ -40,9 +46,10 @@ No new dependencies introduced. The diagnostic uses the existing Docker CLI and 
 - Validate `log-stack` with `sh -n`.
 - Assert VictoriaLogs write URLs match the intended raw and structured contracts.
 - Ingest a few hundred `@timestamp`-only structured records and verify count, exact `_time`, complete JSON `_msg`, and arbitrary nested fields.
+- Send the same 350-line, seven-format `@timestamp` fixture through raw and structured profiles and verify every record lands in the historical event-time range.
 - Run the live diagnostic when Docker is available.
 
 ## Risks & Mitigations
 
 - **Risk:** Historic timestamps may fall outside Grafana's current time range. **Mitigation:** Document widening the Explore time range and expose direct query diagnostics.
-- **Risk:** Existing Alloy positions prevent re-reading files after the config changes. **Mitigation:** Provide one explicit reset-and-reingest command while retaining the granular reset commands.
+- **Risk:** Existing Alloy positions prevent re-reading files after the config changes. **Mitigation:** Make the universal reset remove every backend-specific positions volume.
