@@ -24,6 +24,8 @@ Alloy continues to send Loki-compatible batches. VictoriaLogs owns Loki-envelope
 
 **Rationale:** Loki ingestion takes event time from the protocol envelope, not from VictoriaLogs' parsed JSON fields. The raw profile therefore needs the same timestamp stages, and numeric formats cannot safely share a fallback list because a nanosecond integer is syntactically valid—but incorrect—as Unix seconds.
 
+Compact timezone offsets are parsed with explicit Go layouts using `Z0700`; colon-separated offsets continue to use `Z07:00`. Dot/comma fractional and `T`/space variants are supported for both offset styles.
+
 ### Decision 3: Parse access-log event time
 
 **Decision:** Extract bracketed Apache/Nginx timestamps and parse them with `02/Jan/2006:15:04:05 -0700` in both VictoriaLogs profiles.
@@ -47,6 +49,7 @@ No new dependencies introduced. The diagnostic uses the existing Docker CLI and 
 - Assert VictoriaLogs write URLs match the intended raw and structured contracts.
 - Ingest a few hundred `@timestamp`-only structured records and verify count, exact `_time`, complete JSON `_msg`, and arbitrary nested fields.
 - Send the same 350-line, seven-format `@timestamp` fixture through raw and structured profiles and verify every record lands in the historical event-time range.
+- Send 300 lines matching `2026-01-03T19:58:28.891+0100` through each profile and verify the exact UTC bounds.
 - Run the live diagnostic when Docker is available.
 
 ## Risks & Mitigations
