@@ -26,6 +26,73 @@ loki.source.file "local_logs" {
 }
 
 loki.process "local_logs" {
+  // Raw mode still preserves the complete line as _msg, but event time must come
+  // from JSON timestamps when present instead of from the later file scrape.
+  stage.json {
+    expressions = {
+      json_timestamp = "\"@timestamp\"",
+      timestamp      = "",
+      time           = "",
+      ts             = "",
+    }
+  }
+
+  stage.template {
+    source   = "event_timestamp"
+    template = `{{ if .json_timestamp }}{{ .json_timestamp }}{{ else if .timestamp }}{{ .timestamp }}{{ else if .time }}{{ .time }}{{ else if .ts }}{{ .ts }}{{ end }}`
+  }
+
+  stage.timestamp {
+    source            = "event_timestamp"
+    format            = "RFC3339Nano"
+    action_on_failure = "skip"
+    fallback_formats  = ["RFC3339", "2006-01-02 15:04:05.999999999Z07:00", "2006-01-02T15:04:05,999999999Z07:00", "2006-01-02 15:04:05,999999999Z07:00", "2006-01-02T15:04:05.999999999", "2006-01-02 15:04:05.999999999", "2006-01-02T15:04:05,999999999", "2006-01-02 15:04:05,999999999"]
+  }
+
+  stage.regex {
+    source     = "event_timestamp"
+    expression = "^(?P<event_timestamp_unix>-?\\d{1,10}(?:\\.\\d{1,9})?)$"
+  }
+
+  stage.timestamp {
+    source            = "event_timestamp_unix"
+    format            = "Unix"
+    action_on_failure = "skip"
+  }
+
+  stage.regex {
+    source     = "event_timestamp"
+    expression = "^(?P<event_timestamp_unix_ms>-?\\d{13})$"
+  }
+
+  stage.timestamp {
+    source            = "event_timestamp_unix_ms"
+    format            = "UnixMs"
+    action_on_failure = "skip"
+  }
+
+  stage.regex {
+    source     = "event_timestamp"
+    expression = "^(?P<event_timestamp_unix_us>-?\\d{16})$"
+  }
+
+  stage.timestamp {
+    source            = "event_timestamp_unix_us"
+    format            = "UnixUs"
+    action_on_failure = "skip"
+  }
+
+  stage.regex {
+    source     = "event_timestamp"
+    expression = "^(?P<event_timestamp_unix_ns>-?\\d{19})$"
+  }
+
+  stage.timestamp {
+    source            = "event_timestamp_unix_ns"
+    format            = "UnixNs"
+    action_on_failure = "skip"
+  }
+
   // Parse an ISO-8601/RFC3339 timestamp at the beginning of each line when present.
   // If a line does not match, Loki receives the original line with scrape time.
   stage.regex {

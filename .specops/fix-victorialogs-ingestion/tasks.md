@@ -72,7 +72,7 @@ Add an actionable health/query check and document mixed-log ingestion, time-rang
 - [x] Shell syntax and Compose configuration checks pass.
 - [x] Live diagnostic is run or the missing Docker daemon is recorded.
 
-### Task 3: Make message-less JSON immediately readable and re-ingestable
+### Task 3: Make message-less JSON readable and resets universal
 
 **Status:** Completed
 **Estimated Effort:** S
@@ -82,14 +82,17 @@ Add an actionable health/query check and document mixed-log ingestion, time-rang
 **Blocker:** None
 
 **Description:**
-Preserve the original JSON object in `_msg`, retain parsed fields and source event time, and collapse the required reset/start sequence into one command.
+Preserve the original JSON object in `_msg`, retain parsed fields and source event time, and replace backend-specific reset commands with one universal reset.
 
 **Acceptance Criteria:**
 
 - [x] Message-less JSON displays the complete original object by default.
 - [x] `_time` exactly matches `@timestamp` after ingestion.
 - [x] All source fields remain indexed and queryable.
-- [x] One command resets data/positions and starts JSON mode.
+- [x] `./log-stack reset` clears every Loki/VictoriaLogs data and positions volume while preserving Grafana.
+- [x] Backend-specific reset commands are no longer exposed.
+- [x] Raw and structured profiles both parse JSON event timestamps.
+- [x] Plain `victorialogs` starts structured/mixed mode; raw mode is explicit.
 
 **Files to Modify:**
 
@@ -101,6 +104,7 @@ Preserve the original JSON object in `_msg`, retain parsed fields and source eve
 
 - [x] Alloy v1.16 validates the configuration.
 - [x] A 300-line message-less JSON and 100-line access-log round-trip passes.
+- [x] Both profiles pass a 350-line fixture spanning seven timestamp representations.
 
 ## Progress Tracking
 
