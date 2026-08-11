@@ -3,7 +3,7 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-07-31T10:46:42Z"
+_generatedAt: "2026-08-11T11:20:19Z"
 _sourceHash: "b61e981fbd58fe1ddf0ad0e185b11156490605dc7387e3810d8de74ff807ef57"
 ---
 
@@ -15,23 +15,45 @@ _sourceHash: "b61e981fbd58fe1ddf0ad0e185b11156490605dc7387e3810d8de74ff807ef57"
 
 ```text
 .
+├── .github/
+│   └── workflows/
 ├── images/
+│   ├── base-debug/
+│   └── network-debug/
 └── loki-grafana-analyzer/
     ├── grafana/
-    ├── alloy-config*.alloy
-    ├── docker-compose*.yaml
-    ├── log-stack
-    └── README.md
+    └── stack files
 ```
 
 ### File Declarations
 
+#### Root and CI
+
+- `.github/dependabot.yml`
+- `.github/workflows/build-and-push.yaml`
+- `.gitignore`
+- `README.md`
+
+#### images/
+
+- `images/README.md`
+- `images/base-debug/Dockerfile`
+- `images/base-debug/README.md`
+- `images/network-debug/Dockerfile`
+- `images/network-debug/README.md`
+
 #### loki-grafana-analyzer/
 
+- `.env.example`
+- `README.md`
+- `alloy-config.alloy`
 - `alloy-config.victorialogs.alloy`
 - `alloy-config.victorialogs-json.alloy`
+- `docker-compose.yaml`
+- `docker-compose.loki.yaml`
 - `docker-compose.victorialogs.yaml`
 - `docker-compose.victorialogs-json.yaml`
+- `grafana/provisioning/datasources/loki.yaml`
 - `grafana/provisioning-victorialogs/datasources/victorialogs.yaml`
 - `log-stack`
-- `README.md`
+- `loki-config.yaml`

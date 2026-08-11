@@ -4,7 +4,7 @@ volumes:
 
 services:
   victorialogs:
-    image: docker.io/victoriametrics/victoria-logs:v1.50.0
+    image: docker.io/victoriametrics/victoria-logs:v1.52.0
     container_name: victorialogs
     ports:
       - "127.0.0.1:9428:9428"
@@ -26,7 +26,7 @@ services:
 
   grafana:
     environment:
-      GF_INSTALL_PLUGINS: victoriametrics-logs-datasource
+      GF_PLUGINS_PREINSTALL: victoriametrics-logs-datasource
     volumes:
       - ./grafana/provisioning-victorialogs:/etc/grafana/provisioning:ro
     depends_on:

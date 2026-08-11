@@ -3,16 +3,17 @@ name: "Dependency Safety"
 description: "Project dependencies, known issues, approved versions, and migration timelines"
 inclusion: always
 _generated: true
-_generatedAt: "2026-07-31T10:46:42Z"
+_generatedAt: "2026-08-11T11:59:16Z"
 ---
 
 ## Detected Dependencies
 
 | Package | Version | Ecosystem | Last Audited |
 | --- | --- | --- | --- |
-| Grafana Alloy | 1.16.0 | container | 2026-07-31T10:46:42Z |
-| Grafana | 13.0.1 | container | 2026-07-31T10:46:42Z |
-| VictoriaLogs | 1.50.0 | container | 2026-07-31T10:46:42Z |
+| Grafana Alloy | 1.18.1 | container | 2026-08-11T11:59:16Z |
+| Grafana | 13.1.3 | container | 2026-08-11T11:59:16Z |
+| Loki | 3.7.6 | container | 2026-08-11T11:59:16Z |
+| VictoriaLogs | 1.52.0 | container | 2026-08-11T11:59:16Z |
 
 ## Runtime & Framework Status
 

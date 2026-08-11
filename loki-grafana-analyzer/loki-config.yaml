@@ -25,6 +25,12 @@ query_range:
         enabled: true
         max_size_mb: 512
 
+ingester:
+  # Historical file imports become idle after Alloy reaches EOF. Flush them soon
+  # so old ranges are queryable without waiting for the 30-minute default.
+  flush_check_period: 1s
+  chunk_idle_period: 5s
+
 limits_config:
   # Keep historical files ingestible. Your previous config rejected samples older than 7 days.
   reject_old_samples: false
