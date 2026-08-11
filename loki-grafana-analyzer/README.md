@@ -20,7 +20,7 @@ Choose a VictoriaLogs parser profile before ingesting:
 - Raw/non-JSON mode stores every file line unchanged as `_msg`. Use it when exact line fidelity matters and parse JSON later with `unpack_json`.
 - Structured/mixed mode is recommended when a folder contains JSON-lines application logs and access logs. VictoriaLogs parses valid JSON messages into fields and keeps non-JSON lines unchanged. A common message field such as `message`, `msg`, `log`, or `body` is displayed when present; otherwise `_msg` contains the complete original JSON object, so the initial log view is never blank while the other fields remain queryable. Alloy stores `@timestamp`, `timestamp`, `time`, or `ts` as event time, recognizes ISO-8601 timestamps at the start of a line, and parses Apache/Nginx access timestamps such as `[31/Jul/2026:12:30:00 +0200]`.
 
-Both VictoriaLogs modes extract JSON event time. Supported values include RFC3339/ISO-8601 (including space or comma variants) and Unix seconds, milliseconds, microseconds, or nanoseconds. The plain `victorialogs` command selects structured/mixed mode by default.
+Both VictoriaLogs modes extract JSON event time. Supported values include RFC3339/ISO-8601 (including space or comma variants and timezone offsets such as `+01:00` or `+0100`) and Unix seconds, milliseconds, microseconds, or nanoseconds. The plain `victorialogs` command selects structured/mixed mode by default.
 
 If you switch parser profiles for the same files, reset VictoriaLogs data and the matching Alloy positions before re-ingesting.
 

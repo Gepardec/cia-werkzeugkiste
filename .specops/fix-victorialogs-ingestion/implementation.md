@@ -27,6 +27,7 @@ Completed all tasks. VictoriaLogs structured mode now gives arbitrary JSON a use
 | 4 | Append supported timestamp fields to the structured `_msg_field` list | Message-less JSON events still need a deterministic `_msg`; their source timestamp is present and remains independently stored as event time. | Follow-up | 2026-08-11 |
 | 5 | Inject the complete JSON object as `_msg` and add one universal reset | A timestamp-only `_msg` is not a useful default display, and separate reset commands make it easy to leave stale data or positions behind. | Follow-up | 2026-08-11 |
 | 6 | Parse JSON timestamps in both profiles and default `victorialogs` to structured mode | The retained container proved raw mode was active; Loki requires Alloy to put the source time in its envelope, and numeric Unix units need length-specific parsing. | Follow-up | 2026-08-11 |
+| 7 | Add compact numeric timezone layouts | Go's RFC3339 parser rejects `+0100`; explicit `Z0700` layouts preserve production timestamps without normalizing source files first. | Follow-up | 2026-08-11 |
 
 ## Deviations from Design
 
@@ -55,13 +56,14 @@ Completed all tasks. VictoriaLogs structured mode now gives arbitrary JSON a use
 - Message-less JSON follow-up: added timestamp candidates as the final structured `_msg` fallback and verified the behavior with two 300-line fixtures containing timestamps and arbitrary fields but no message-like property. The variant fixture evenly covered `@timestamp`, `timestamp`, `time`, and `ts`.
 - Default-display follow-up: inspected the retained backend data, confirmed stale records kept ingestion `_time`, injected the complete JSON object into `_msg`, and consolidated reset operations into `./log-stack reset`. An isolated Alloy v1.16/VictoriaLogs v1.50 run verified 300 JSON records and 100 access records with exact source-time bounds, complete non-empty messages, indexed nested fields, and zero Alloy errors.
 - Timestamp follow-up: inspected the stopped container mounts and found the raw profile from an older worktree was active. Added JSON timestamp processing to raw mode, made structured mode the plain-command default, and routed Unix integers by length after a live test exposed nanoseconds being misread as seconds. Raw and structured profiles each ingested all 350 seven-format records into the 2024 time range with zero Alloy errors.
+- Compact-offset follow-up: reproduced the supplied `2026-01-03T19:58:28.891+0100` shape across 300 sequential records. Added `Z0700` layouts to both profiles; each profile imported all 300 records with exact UTC bounds `18:58:28.891Z`–`19:03:27.891Z`, complete messages, and zero Alloy errors.
 
 ## Phase 3 Completion Summary
 
 - Tasks completed: 3/3.
 - Files modified: two Alloy profiles, datasource provisioning, `log-stack`, and component README.
 - Deviations: none.
-- Tests: shell syntax, three Compose configurations, pinned Alloy runtime loading, URL/help/datasource assertions, `git diff --check`, mixed-log fixtures, a 300-line message-less JSON plus 100-line access regression, two 350-line seven-format timestamp profile runs, timestamp boundaries, complete messages, structured fields, Alloy logs, command routing, and Grafana datasource health passed.
+- Tests: shell syntax, three Compose configurations, pinned Alloy runtime loading, URL/help/datasource assertions, `git diff --check`, mixed-log fixtures, a 300-line message-less JSON plus 100-line access regression, two 350-line seven-format timestamp runs, two 300-line compact-offset timestamp runs, exact UTC boundaries, complete messages, structured fields, Alloy logs, command routing, and Grafana datasource health passed.
 
 ## Phase 2 Completion Summary
 

@@ -105,6 +105,7 @@ Preserve the original JSON object in `_msg`, retain parsed fields and source eve
 - [x] Alloy v1.16 validates the configuration.
 - [x] A 300-line message-less JSON and 100-line access-log round-trip passes.
 - [x] Both profiles pass a 350-line fixture spanning seven timestamp representations.
+- [x] Both profiles pass a 300-line compact-offset (`+0100`) production-format fixture with exact UTC bounds.
 
 ## Progress Tracking
 
