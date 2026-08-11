@@ -6,7 +6,7 @@ VictoriaLogs ingestion is unreliable for the two real input classes: JSON-lines 
 
 ## Root Cause Analysis
 
-Both VictoriaLogs profiles force `_stream_fields=job`, collapsing all files into one stream and discarding Alloy's useful `filename` stream label. The pipeline parses JSON and ISO-8601 timestamps but does not parse Apache/Nginx access timestamps, so access records receive ingestion time instead of event time. Live verification also showed that VictoriaLogs v1.50 needs an explicit parsed JSON message-field list after automatic JSON expansion; without it, `_msg` becomes the backend's default missing-message value.
+Both VictoriaLogs profiles force `_stream_fields=job`, collapsing all files into one stream and discarding Alloy's useful `filename` stream label. The pipeline parses JSON and ISO-8601 timestamps but does not parse Apache/Nginx access timestamps, so access records receive ingestion time instead of event time. Live verification also showed that VictoriaLogs v1.50 needs an explicit parsed JSON message-field list after automatic JSON expansion; without it, `_msg` becomes the backend's default missing-message value. A follow-up production payload exposed the same default when a valid JSON event contains a timestamp and structured fields but no message-like field.
 
 The stack has no command that distinguishes backend reachability, Alloy delivery failure, and Grafana query failure, so a configuration error presents as an empty Explore result.
 
@@ -18,7 +18,7 @@ The stack has no command that distinguishes backend reachability, Alloy delivery
 
 **Error Symptoms:**
 
-- JSON records may not have a useful `_msg` value.
+- JSON records may not have a useful `_msg` value, especially when they contain no message-like field.
 - Access and application logs share one indistinguishable stream.
 - Operators cannot tell whether VictoriaLogs is unreachable or merely has no matching records.
 
@@ -60,7 +60,7 @@ The stack has no command that distinguishes backend reachability, Alloy delivery
 
 ## Proposed Fix
 
-Preserve all Alloy stream labels by removing `_stream_fields=job`, explicitly select common parsed JSON message fields for VictoriaLogs v1.50, and only disable JSON parsing in the raw profile. Parse Apache/Nginx access timestamps with Alloy's Go timestamp format. Add a diagnostic command that checks VictoriaLogs health, verifies the LogsQL query endpoint, and reports container state and recent logs when a check fails.
+Preserve all Alloy stream labels by removing `_stream_fields=job`, explicitly select common parsed JSON message fields for VictoriaLogs v1.50, and use supported timestamp fields as the final `_msg` fallback for message-less structured events. Only disable JSON parsing in the raw profile. Parse Apache/Nginx access timestamps with Alloy's Go timestamp format. Add a diagnostic command that checks VictoriaLogs health, verifies the LogsQL query endpoint, and reports container state and recent logs when a check fails.
 
 ## Unchanged Behavior
 
@@ -76,6 +76,7 @@ Preserve all Alloy stream labels by removing `_stream_fields=job`, explicitly se
 ### Expected Behavior (verify the fix works)
 
 - WHEN JSON and access logs are sent through the structured profile THE SYSTEM SHALL retain a non-empty `_msg`, parse valid JSON fields, and keep the `filename` stream label.
+- WHEN a JSON event has only a supported timestamp and arbitrary structured fields THE SYSTEM SHALL use the timestamp as `_msg`, retain all other original fields, and store the source timestamp as event time.
 - WHEN diagnostics run against a started stack THE SYSTEM SHALL verify both the health and LogsQL query endpoints.
 
 ### Unchanged Behavior (verify no regressions)

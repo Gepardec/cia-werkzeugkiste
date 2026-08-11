@@ -29,13 +29,13 @@
 | Root Cause Accuracy | Both URLs now match the documented VictoriaLogs Loki contract. | Root cause was configuration-derived because no running backend was available. | 9 | Pass |
 | Fix Completeness | Structured mode accepts JSON/plain messages; raw mode stays lossless; filename labels are preserved. | Existing position volumes still require the documented one-time reset. | 8 | Pass |
 | Regression Safety | All Compose profiles and raw endpoint assertions pass. | Alloy's parser cannot be executed without the container runtime. | 9 | Pass |
-| Test Verification | Static checks plus an isolated 600-line VictoriaLogs/Alloy/Grafana round-trip pass. | The fixture covers JSON `message` and combined access-log formats; other custom timestamp formats remain configuration-specific. | 10 | Pass |
+| Test Verification | Static checks, an isolated 600-line VictoriaLogs/Alloy/Grafana round-trip, and two 300-line message-less JSON follow-ups pass. | The fixtures cover JSON with and without message fields, all four supported JSON timestamp keys, and combined access-log format; other custom timestamp formats remain configuration-specific. | 10 | Pass |
 
 **Test Exercise Results:**
 
 - Tests run: yes, static and live
-- Test command: static suite plus isolated VictoriaLogs, Alloy, and Grafana containers with 600 fixture lines
-- Pass count: 7 static checks and 9 live assertions
+- Test command: static suite plus isolated VictoriaLogs, Alloy, and Grafana containers with 600 fixture lines and two isolated 300-line message-less JSON fixtures
+- Pass count: 7 static checks and 17 live assertions
 - Fail count: 0
 - Failures: none
 
