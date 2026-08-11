@@ -1,5 +1,48 @@
 {
   "version": 1,
-  "decisionCategories": [],
-  "fileOverlaps": []
+  "decisionCategories": [
+    {
+      "category": "diagnostics",
+      "specs": [
+        "fix-victorialogs-ingestion",
+        "unify-log-backends"
+      ],
+      "count": 2,
+      "lesson": "Backend diagnostics should combine a service-level check with a real all-time query so startup gates and UI time ranges do not create false negatives."
+    }
+  ],
+  "fileOverlaps": [
+    {
+      "file": "loki-grafana-analyzer/alloy-config.victorialogs-json.alloy",
+      "specs": [
+        "fix-victorialogs-ingestion",
+        "unify-log-backends"
+      ],
+      "count": 2
+    },
+    {
+      "file": "loki-grafana-analyzer/alloy-config.victorialogs.alloy",
+      "specs": [
+        "fix-victorialogs-ingestion",
+        "unify-log-backends"
+      ],
+      "count": 2
+    },
+    {
+      "file": "loki-grafana-analyzer/log-stack",
+      "specs": [
+        "fix-victorialogs-ingestion",
+        "unify-log-backends"
+      ],
+      "count": 2
+    },
+    {
+      "file": "loki-grafana-analyzer/README.md",
+      "specs": [
+        "fix-victorialogs-ingestion",
+        "unify-log-backends"
+      ],
+      "count": 2
+    }
+  ]
 }

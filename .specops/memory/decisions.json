@@ -30,6 +30,36 @@
       "task": "Follow-up verification",
       "date": "2026-07-31",
       "completedAt": "2026-07-31T11:04:21Z"
+    },
+    {
+      "specId": "unify-log-backends",
+      "specType": "refactor",
+      "number": 1,
+      "decision": "Flush idle historical Loki chunks after five seconds",
+      "rationale": "Loki accepted the 350-line fixture but skipped its old in-memory chunks during queries; the documented ingester lookback override did not alter single-binary query routing in the tested 3.7 release, while automatic idle flushing reliably made records visible.",
+      "task": "Task 1",
+      "date": "2026-08-11",
+      "completedAt": "2026-08-11T12:00:30Z"
+    },
+    {
+      "specId": "unify-log-backends",
+      "specType": "refactor",
+      "number": 2,
+      "decision": "Give Loki a health-plus-query diagnostic",
+      "rationale": "VictoriaLogs already verified both backend health and its query path; adding the equivalent Loki command makes the operator workflow backend-neutral.",
+      "task": "Task 1",
+      "date": "2026-08-11",
+      "completedAt": "2026-08-11T12:00:30Z"
+    },
+    {
+      "specId": "unify-log-backends",
+      "specType": "refactor",
+      "number": 3,
+      "decision": "Check Loki's service endpoint instead of startup-gated readiness",
+      "rationale": "Loki 3.7.6 returned successful historical queries while `/ready` still reported its post-ring startup delay; `/services` plus a real LogQL query detects an available local backend without that false negative.",
+      "task": "Task 1",
+      "date": "2026-08-11",
+      "completedAt": "2026-08-11T12:00:30Z"
     }
   ]
 }

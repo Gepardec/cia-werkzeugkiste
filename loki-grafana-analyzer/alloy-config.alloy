@@ -26,8 +26,74 @@ loki.source.file "local_logs" {
 }
 
 loki.process "local_logs" {
-  // Parse an ISO-8601/RFC3339 timestamp at the beginning of each line when present.
-  // If a line does not match, Loki receives the original line with scrape time.
+  // Prefer timestamps embedded in JSON. Parsing only changes the entry timestamp;
+  // Loki still stores the complete original line for display and query-time `| json`.
+  stage.json {
+    expressions = {
+      json_timestamp = "\"@timestamp\"",
+      timestamp      = "",
+      time           = "",
+      ts             = "",
+    }
+  }
+
+  stage.template {
+    source   = "event_timestamp"
+    template = `{{ if .json_timestamp }}{{ .json_timestamp }}{{ else if .timestamp }}{{ .timestamp }}{{ else if .time }}{{ .time }}{{ else if .ts }}{{ .ts }}{{ end }}`
+  }
+
+  stage.timestamp {
+    source            = "event_timestamp"
+    format            = "RFC3339Nano"
+    action_on_failure = "skip"
+    fallback_formats  = ["RFC3339", "2006-01-02 15:04:05.999999999Z07:00", "2006-01-02T15:04:05,999999999Z07:00", "2006-01-02 15:04:05,999999999Z07:00", "2006-01-02T15:04:05.999999999Z0700", "2006-01-02 15:04:05.999999999Z0700", "2006-01-02T15:04:05,999999999Z0700", "2006-01-02 15:04:05,999999999Z0700", "2006-01-02T15:04:05.999999999", "2006-01-02 15:04:05.999999999", "2006-01-02T15:04:05,999999999", "2006-01-02 15:04:05,999999999"]
+  }
+
+  stage.regex {
+    source     = "event_timestamp"
+    expression = "^(?P<event_timestamp_unix>-?\\d{1,10}(?:\\.\\d{1,9})?)$"
+  }
+
+  stage.timestamp {
+    source            = "event_timestamp_unix"
+    format            = "Unix"
+    action_on_failure = "skip"
+  }
+
+  stage.regex {
+    source     = "event_timestamp"
+    expression = "^(?P<event_timestamp_unix_ms>-?\\d{13})$"
+  }
+
+  stage.timestamp {
+    source            = "event_timestamp_unix_ms"
+    format            = "UnixMs"
+    action_on_failure = "skip"
+  }
+
+  stage.regex {
+    source     = "event_timestamp"
+    expression = "^(?P<event_timestamp_unix_us>-?\\d{16})$"
+  }
+
+  stage.timestamp {
+    source            = "event_timestamp_unix_us"
+    format            = "UnixUs"
+    action_on_failure = "skip"
+  }
+
+  stage.regex {
+    source     = "event_timestamp"
+    expression = "^(?P<event_timestamp_unix_ns>-?\\d{19})$"
+  }
+
+  stage.timestamp {
+    source            = "event_timestamp_unix_ns"
+    format            = "UnixNs"
+    action_on_failure = "skip"
+  }
+
+  // Fall back to an ISO timestamp at the beginning of a non-JSON line.
   stage.regex {
     expression = "^(?P<ts>\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2}))\\s*(?P<message>.*)$"
   }
@@ -35,6 +101,17 @@ loki.process "local_logs" {
   stage.timestamp {
     source            = "ts"
     format            = "RFC3339Nano"
+    action_on_failure = "skip"
+  }
+
+  // Parse Apache/Nginx combined and common access-log timestamps.
+  stage.regex {
+    expression = "^[^\\[]*\\[(?P<access_timestamp>\\d{2}/[A-Za-z]{3}/\\d{4}:\\d{2}:\\d{2}:\\d{2} [+-]\\d{4})\\]"
+  }
+
+  stage.timestamp {
+    source            = "access_timestamp"
+    format            = "02/Jan/2006:15:04:05 -0700"
     action_on_failure = "skip"
   }
 
