@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "decisions": [
+    {
+      "specId": "fix-victorialogs-ingestion",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Preserve Loki stream labels and select common parsed JSON message fields",
+      "rationale": "This retains filename streams and prevents VictoriaLogs v1.50 from assigning the missing-message default.",
+      "task": "Task 1",
+      "date": "2026-07-31",
+      "completedAt": "2026-07-31T10:51:37Z"
+    },
+    {
+      "specId": "fix-victorialogs-ingestion",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Query from epoch start in connection diagnostics",
+      "rationale": "This separates backend/query health from Grafana time-range selection.",
+      "task": "Task 2",
+      "date": "2026-07-31",
+      "completedAt": "2026-07-31T10:51:37Z"
+    },
+    {
+      "specId": "fix-victorialogs-ingestion",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Parse Apache and Nginx access-log timestamps in Alloy",
+      "rationale": "Offline access records must store source event time instead of ingestion time.",
+      "task": "Follow-up verification",
+      "date": "2026-07-31",
+      "completedAt": "2026-07-31T11:04:21Z"
+    }
+  ]
+}

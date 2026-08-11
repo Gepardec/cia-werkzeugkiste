@@ -1,0 +1,10 @@
+[
+  {
+    "id": "fix-victorialogs-ingestion",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-07-31T11:04:21Z"
+  }
+]
