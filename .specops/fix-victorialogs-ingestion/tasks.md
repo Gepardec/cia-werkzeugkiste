@@ -23,7 +23,7 @@ Remove redundant Loki-ingestion overrides while retaining the raw profile's expl
 **Acceptance Criteria:**
 
 - [x] JSON profile uses VictoriaLogs automatic Loki message parsing.
-- [x] JSON profile falls back to a supported timestamp when no message-like field exists.
+- [x] JSON profile falls back to the complete original JSON object when no message-like field exists.
 - [x] Raw profile preserves original lines.
 - [x] Both profiles retain Alloy's filename stream label.
 
@@ -72,10 +72,40 @@ Add an actionable health/query check and document mixed-log ingestion, time-rang
 - [x] Shell syntax and Compose configuration checks pass.
 - [x] Live diagnostic is run or the missing Docker daemon is recorded.
 
+### Task 3: Make message-less JSON immediately readable and re-ingestable
+
+**Status:** Completed
+**Estimated Effort:** S
+**Dependencies:** Task 1, Task 2
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Preserve the original JSON object in `_msg`, retain parsed fields and source event time, and collapse the required reset/start sequence into one command.
+
+**Acceptance Criteria:**
+
+- [x] Message-less JSON displays the complete original object by default.
+- [x] `_time` exactly matches `@timestamp` after ingestion.
+- [x] All source fields remain indexed and queryable.
+- [x] One command resets data/positions and starts JSON mode.
+
+**Files to Modify:**
+
+- `loki-grafana-analyzer/alloy-config.victorialogs-json.alloy`
+- `loki-grafana-analyzer/log-stack`
+- `loki-grafana-analyzer/README.md`
+
+**Tests Required:**
+
+- [x] Alloy v1.16 validates the configuration.
+- [x] A 300-line message-less JSON and 100-line access-log round-trip passes.
+
 ## Progress Tracking
 
-- Total Tasks: 2
-- Completed: 2
+- Total Tasks: 3
+- Completed: 3
 - In Progress: 0
 - Blocked: 0
 - Pending: 0

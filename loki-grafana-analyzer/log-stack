@@ -79,6 +79,7 @@ Commands:
                                Remove VictoriaLogs JSON Alloy positions volume
   reset-victorialogs-all-positions
                                Remove both VictoriaLogs Alloy positions volumes
+  reingest-victorialogs-json    Reset VictoriaLogs data/positions and start JSON mode
 EOF
 }
 
@@ -150,6 +151,14 @@ case "$command" in
     compose_victorialogs_json down
     remove_volume loki-grafana-log-analysis_alloy-data-victorialogs
     remove_volume loki-grafana-log-analysis_alloy-data-victorialogs-json
+    ;;
+  reingest-victorialogs-json)
+    compose_victorialogs down --remove-orphans
+    compose_victorialogs_json down --remove-orphans
+    remove_volume loki-grafana-log-analysis_victorialogs-data
+    remove_volume loki-grafana-log-analysis_alloy-data-victorialogs
+    remove_volume loki-grafana-log-analysis_alloy-data-victorialogs-json
+    compose_victorialogs_json up -d --remove-orphans
     ;;
   help|-h|--help)
     usage

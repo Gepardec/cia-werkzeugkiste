@@ -27,15 +27,15 @@
 | Dimension | Evidence | Findings | Score | Pass/Fail |
 | --- | --- | --- | --- | --- |
 | Root Cause Accuracy | Both URLs now match the documented VictoriaLogs Loki contract. | Root cause was configuration-derived because no running backend was available. | 9 | Pass |
-| Fix Completeness | Structured mode accepts JSON/plain messages; raw mode stays lossless; filename labels are preserved. | Existing position volumes still require the documented one-time reset. | 8 | Pass |
+| Fix Completeness | Structured mode accepts JSON/plain messages, arbitrary JSON gets a complete default `_msg`, raw mode stays lossless, and one command performs the required clean re-ingestion. | The command intentionally deletes existing VictoriaLogs data because stored records cannot be rewritten. | 10 | Pass |
 | Regression Safety | All Compose profiles and raw endpoint assertions pass. | Alloy's parser cannot be executed without the container runtime. | 9 | Pass |
-| Test Verification | Static checks, an isolated 600-line VictoriaLogs/Alloy/Grafana round-trip, and two 300-line message-less JSON follow-ups pass. | The fixtures cover JSON with and without message fields, all four supported JSON timestamp keys, and combined access-log format; other custom timestamp formats remain configuration-specific. | 10 | Pass |
+| Test Verification | Static checks, Alloy validation, isolated mixed-log round-trips, and the 300-line JSON plus 100-line access regression pass. | The fixtures cover JSON with and without message fields, all four supported JSON timestamp keys, and combined access-log format; other custom timestamp formats remain configuration-specific. | 10 | Pass |
 
 **Test Exercise Results:**
 
 - Tests run: yes, static and live
-- Test command: static suite plus isolated VictoriaLogs, Alloy, and Grafana containers with 600 fixture lines and two isolated 300-line message-less JSON fixtures
-- Pass count: 7 static checks and 17 live assertions
+- Test command: static suite plus isolated VictoriaLogs, Alloy, and Grafana containers, including a 300-line `@timestamp` JSON and 100-line access-log regression
+- Pass count: all static checks and live assertions passed
 - Fail count: 0
 - Failures: none
 

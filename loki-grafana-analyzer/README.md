@@ -18,7 +18,7 @@ Put `.log`, `.txt`, `.json`, or rotated `.log.*` files in `./logs`. Compressed a
 Choose a VictoriaLogs parser profile before ingesting:
 
 - Raw/non-JSON mode stores every file line unchanged as `_msg`. Use it when exact line fidelity matters and parse JSON later with `unpack_json`.
-- Structured/mixed mode is recommended when a folder contains JSON-lines application logs and access logs. VictoriaLogs parses valid JSON messages into fields, selects common message fields such as `message`, `msg`, `log`, or `body` for `_msg`, and keeps non-JSON lines unchanged. If a JSON event has no message-like field, its first available timestamp field (`@timestamp`, `timestamp`, `time`, or `ts`) becomes `_msg` instead, while its other fields remain queryable. Alloy also stores that source timestamp as event time, recognizes ISO-8601 timestamps at the start of a line, and parses Apache/Nginx access timestamps such as `[31/Jul/2026:12:30:00 +0200]`.
+- Structured/mixed mode is recommended when a folder contains JSON-lines application logs and access logs. VictoriaLogs parses valid JSON messages into fields and keeps non-JSON lines unchanged. A common message field such as `message`, `msg`, `log`, or `body` is displayed when present; otherwise `_msg` contains the complete original JSON object, so the initial log view is never blank while the other fields remain queryable. Alloy stores `@timestamp`, `timestamp`, `time`, or `ts` as event time, recognizes ISO-8601 timestamps at the start of a line, and parses Apache/Nginx access timestamps such as `[31/Jul/2026:12:30:00 +0200]`.
 
 If you switch parser profiles for the same files, reset VictoriaLogs data and the matching Alloy positions before re-ingesting.
 
@@ -89,14 +89,13 @@ After changing parser behavior or replacing log files, reset both the backend da
 
 ## VictoriaLogs troubleshooting
 
-For a mixed folder of JSON application logs and access logs, start from clean backend and position volumes once after this configuration change:
+For a mixed folder of JSON application logs and access logs, reset and re-ingest everything in JSON mode with one command after this configuration change:
 
 ```bash
-./log-stack reset-victorialogs-data
-./log-stack reset-victorialogs-all-positions
-./log-stack victorialogs-json
-./log-stack check-victorialogs
+./log-stack reingest-victorialogs-json
 ```
+
+After startup, `./log-stack check-victorialogs` optionally verifies backend health and the LogsQL query endpoint.
 
 Then query `*` in Grafana Explore. If the source files contain old timestamps, widen Explore's time range to cover those timestamps; Alloy deliberately preserves recognized source timestamps. Filter a particular file with `{filename="/logs/path/to/file.log"}` or all local files with `{job="local_logs"}`.
 
