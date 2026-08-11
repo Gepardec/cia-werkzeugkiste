@@ -94,8 +94,9 @@ loki.write "local" {
   endpoint {
     // VictoriaLogs parses valid JSON messages into fields and keeps non-JSON access
     // lines intact. Select the first common JSON message field explicitly so v1.50
-    // does not replace _msg with its default value after parsing. Stream labels are
-    // left untouched, so Alloy's filename label remains part of the stream.
-    url = "http://victorialogs:9428/insert/loki/api/v1/push?_msg_field=message,msg,log,log.message,event.original,event.message,body,text,error.message,exception.message,detail,details,summary,title,event.action"
+    // does not replace _msg with its default value after parsing. Timestamp fields
+    // are last-resort fallbacks for structured events without a message-like field.
+    // Stream labels are left untouched, so filename remains part of the stream.
+    url = "http://victorialogs:9428/insert/loki/api/v1/push?_msg_field=message,msg,log,log.message,event.original,event.message,body,text,error.message,exception.message,detail,details,summary,title,event.action,@timestamp,timestamp,time,ts"
   }
 }

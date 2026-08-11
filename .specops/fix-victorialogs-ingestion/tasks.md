@@ -23,6 +23,7 @@ Remove redundant Loki-ingestion overrides while retaining the raw profile's expl
 **Acceptance Criteria:**
 
 - [x] JSON profile uses VictoriaLogs automatic Loki message parsing.
+- [x] JSON profile falls back to a supported timestamp when no message-like field exists.
 - [x] Raw profile preserves original lines.
 - [x] Both profiles retain Alloy's filename stream label.
 
@@ -34,6 +35,7 @@ Remove redundant Loki-ingestion overrides while retaining the raw profile's expl
 **Tests Required:**
 
 - [x] Static endpoint assertions pass.
+- [x] A live timestamp-only JSON fixture preserves source time and structured fields.
 
 ### Task 2: Add connection diagnostics and operator guidance
 

@@ -8,9 +8,9 @@ Alloy continues to send Loki-compatible batches. VictoriaLogs owns Loki-envelope
 
 ### Decision 1: Preserve streams and select structured messages
 
-**Decision:** Remove `_stream_fields` overrides from both URLs. Keep `disable_message_parsing=1` in raw mode and use an explicit list of common message fields in structured mode.
+**Decision:** Remove `_stream_fields` overrides from both URLs. Keep `disable_message_parsing=1` in raw mode and use an explicit list of common message fields in structured mode, followed by the supported timestamp fields as fallbacks.
 
-**Rationale:** VictoriaLogs treats Loki labels as stream fields by default, preserving `filename`. On v1.50, selecting common fields such as `message`, `msg`, `log`, and `body` prevents parsed JSON records from receiving the missing-message default.
+**Rationale:** VictoriaLogs treats Loki labels as stream fields by default, preserving `filename`. On v1.50, selecting common fields such as `message`, `msg`, `log`, and `body` prevents parsed JSON records from receiving the missing-message default. Timestamp candidates guarantee the same behavior for valid structured events that intentionally have no message property, without discarding their other fields.
 
 ### Decision 3: Parse access-log event time
 
@@ -33,6 +33,7 @@ No new dependencies introduced. The diagnostic uses the existing Docker CLI and 
 - Validate all Compose profiles with `docker compose config`.
 - Validate `log-stack` with `sh -n`.
 - Assert VictoriaLogs write URLs match the intended raw and structured contracts.
+- Ingest a few hundred timestamp-only structured records and verify count, `_time`, `_msg`, and an arbitrary field.
 - Run the live diagnostic when Docker is available.
 
 ## Risks & Mitigations
