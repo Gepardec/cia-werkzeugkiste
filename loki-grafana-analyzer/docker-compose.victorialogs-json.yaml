@@ -1,0 +1,33 @@
+volumes:
+  victorialogs-data:
+  alloy-data-victorialogs-json:
+
+services:
+  victorialogs:
+    image: docker.io/victoriametrics/victoria-logs:v1.52.0
+    container_name: victorialogs
+    ports:
+      - "127.0.0.1:9428:9428"
+    command:
+      - -storageDataPath=/victoria-logs-data
+      - -retentionPeriod=100y
+    volumes:
+      - victorialogs-data:/victoria-logs-data
+    networks:
+      - observability
+    restart: unless-stopped
+
+  alloy:
+    volumes:
+      - ./alloy-config.victorialogs-json.alloy:/etc/alloy/config.alloy:ro
+      - alloy-data-victorialogs-json:/var/lib/alloy/data
+    depends_on:
+      - victorialogs
+
+  grafana:
+    environment:
+      GF_PLUGINS_PREINSTALL: victoriametrics-logs-datasource
+    volumes:
+      - ./grafana/provisioning-victorialogs:/etc/grafana/provisioning:ro
+    depends_on:
+      - victorialogs

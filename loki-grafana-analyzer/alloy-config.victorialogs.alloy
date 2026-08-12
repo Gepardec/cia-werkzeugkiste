@@ -1,0 +1,128 @@
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+// Watches local files mounted from ./logs.
+// Add .log, .txt, .json, and rotated logs anywhere under ./logs.
+// Compressed and archive files are excluded unless decompression is configured.
+local.file_match "local_logs" {
+  path_targets = [
+    {"__path__" = "/logs/**/*.log",  "job" = "local_logs"},
+    {"__path__" = "/logs/**/*.txt",  "job" = "local_logs"},
+    {"__path__" = "/logs/**/*.json", "job" = "local_logs"},
+    {
+      "__path__"         = "/logs/**/*.log.*",
+      "__path_exclude__" = "/logs/**/*.{gz,zip,bz2,z,tar,tar.gz,tgz}",
+      "job"              = "local_logs",
+    },
+  ]
+}
+
+loki.source.file "local_logs" {
+  targets       = local.file_match.local_logs.targets
+  forward_to    = [loki.process.local_logs.receiver]
+  tail_from_end = false
+}
+
+loki.process "local_logs" {
+  // Raw mode still preserves the complete line as _msg, but event time must come
+  // from JSON timestamps when present instead of from the later file scrape.
+  stage.json {
+    expressions = {
+      json_timestamp = "\"@timestamp\"",
+      timestamp      = "",
+      time           = "",
+      ts             = "",
+    }
+  }
+
+  stage.template {
+    source   = "event_timestamp"
+    template = `{{ if .json_timestamp }}{{ .json_timestamp }}{{ else if .timestamp }}{{ .timestamp }}{{ else if .time }}{{ .time }}{{ else if .ts }}{{ .ts }}{{ end }}`
+  }
+
+  stage.timestamp {
+    source            = "event_timestamp"
+    format            = "RFC3339Nano"
+    action_on_failure = "skip"
+    fallback_formats  = ["RFC3339", "2006-01-02 15:04:05.999999999Z07:00", "2006-01-02T15:04:05,999999999Z07:00", "2006-01-02 15:04:05,999999999Z07:00", "2006-01-02T15:04:05.999999999Z0700", "2006-01-02 15:04:05.999999999Z0700", "2006-01-02T15:04:05,999999999Z0700", "2006-01-02 15:04:05,999999999Z0700", "2006-01-02T15:04:05.999999999", "2006-01-02 15:04:05.999999999", "2006-01-02T15:04:05,999999999", "2006-01-02 15:04:05,999999999"]
+  }
+
+  stage.regex {
+    source     = "event_timestamp"
+    expression = "^(?P<event_timestamp_unix>-?\\d{1,10}(?:\\.\\d{1,9})?)$"
+  }
+
+  stage.timestamp {
+    source            = "event_timestamp_unix"
+    format            = "Unix"
+    action_on_failure = "skip"
+  }
+
+  stage.regex {
+    source     = "event_timestamp"
+    expression = "^(?P<event_timestamp_unix_ms>-?\\d{13})$"
+  }
+
+  stage.timestamp {
+    source            = "event_timestamp_unix_ms"
+    format            = "UnixMs"
+    action_on_failure = "skip"
+  }
+
+  stage.regex {
+    source     = "event_timestamp"
+    expression = "^(?P<event_timestamp_unix_us>-?\\d{16})$"
+  }
+
+  stage.timestamp {
+    source            = "event_timestamp_unix_us"
+    format            = "UnixUs"
+    action_on_failure = "skip"
+  }
+
+  stage.regex {
+    source     = "event_timestamp"
+    expression = "^(?P<event_timestamp_unix_ns>-?\\d{19})$"
+  }
+
+  stage.timestamp {
+    source            = "event_timestamp_unix_ns"
+    format            = "UnixNs"
+    action_on_failure = "skip"
+  }
+
+  // Parse an ISO-8601/RFC3339 timestamp at the beginning of each line when present.
+  // If a line does not match, Loki receives the original line with scrape time.
+  stage.regex {
+    expression = "^(?P<ts>\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2}))\\s*(?P<message>.*)$"
+  }
+
+  stage.timestamp {
+    source            = "ts"
+    format            = "RFC3339Nano"
+    action_on_failure = "skip"
+  }
+
+  // Parse the timestamp used by Apache/Nginx combined and common access logs.
+  stage.regex {
+    expression = "^[^\\[]*\\[(?P<access_timestamp>\\d{2}/[A-Za-z]{3}/\\d{4}:\\d{2}:\\d{2}:\\d{2} [+-]\\d{4})\\]"
+  }
+
+  stage.timestamp {
+    source            = "access_timestamp"
+    format            = "02/Jan/2006:15:04:05 -0700"
+    action_on_failure = "skip"
+  }
+
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    // Keep each file line as _msg. VictoriaLogs uses all Loki labels, including
+    // filename, as stream fields unless _stream_fields is explicitly overridden.
+    url = "http://victorialogs:9428/insert/loki/api/v1/push?disable_message_parsing=1"
+  }
+}
